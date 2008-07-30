@@ -122,82 +122,80 @@ module Prawn
         @font_size = size unless size == nil
       end   
       
-      def parse_inline_styles(text) #:nodoc:  
-        segments = text.split( %r{(</?[ib]>)} ).delete_if{|x| x.empty? }
-        segments    
-      end    
-      
-      def style_tag?(text)
-        text =~ %r{(</?[ib]>)}
-      end 
-      
-      def render_inline_text_segments(text,options={}) 
-        
-         if options[:at]
-           x, y = options[:at]
-         else
-           x = horizontal_cursor(options[:align])
-           y = self.y 
-         end
-                     
-         parse_inline_styles(text).each do |segment| 
-           if style_tag?(segment)
-             adjust_font_style(segment)
-           else                 
-             add_text_content(segment,x,y,options)      
-             x += text_width(segment, font_size) 
-           end
-         end              
-      end
-      
-      def adjust_font_style(modifier="")
-        require "set"
-        @font_style ||= Set.new             
-        case(modifier)
-        when "<i>"
-          @font_style << "i"
-        when "<b>"
-          @font_style << "b"
-        when "</i>"
-          @font_style.delete "i"
-        when "</b>"
-          @font_style.delete "b"
-        end                      
-        n = font_families[@font.match(/(\w+)-?/)[1]][@font_style.to_a.join] 
-        font(n) if n && @font != n
-      end        
-      
-      def font_families
-        @font_families ||= Hash.new { |h,k| h[k] = {} }.update(
-          "Helvetica" => {
-            "b"   => 'Helvetica-Bold',
-            "i"   => 'Helvetica-Oblique',
-            "bi"  => 'Helvetica-BoldOblique',
-            "ib"  => 'Helvetica-BoldOblique',
-            ""    => 'Helvetica'
-          },
-          "Courier" => {
-            "b"   => 'Courier-Bold',
-            "i"   => 'Courier-Oblique',
-            "bi"  => 'Courier-BoldOblique',
-            "ib"  => 'Courier-BoldOblique',
-            ""    => 'Courier'
-          },
-          'Times' => {
-            "b"   => 'Times-Bold',
-            "i"   => 'Times-Italic',
-            "bi"  => 'Times-BoldItalic',
-            "ib"  => 'Times-BoldItalic',
-            ""    => 'Times-Roman'
-          })
-     end
-      
-      #text.gsub!("&lt;","<")    
-      #text.gsub!("&gt;",">")
-      
       alias_method :font_size=, :font_size!
 
-      private 
+      private  
+      
+       def parse_inline_styles(text) #:nodoc:  
+         segments = text.split( %r{(</?[ib]>)} ).delete_if{|x| x.empty? }
+         segments    
+       end    
+
+       def style_tag?(text)
+         text =~ %r{(</?[ib]>)}
+       end 
+
+       def render_inline_text_segments(text,options={}) 
+          if options[:at]
+            x, y = options[:at]
+          else
+            x = horizontal_cursor(options[:align])
+            y = self.y 
+          end
+
+          parse_inline_styles(text).each do |segment| 
+            if style_tag?(segment)
+              adjust_font_style(segment)
+            else                      
+              segment.gsub!("&lt;","<")    
+              segment.gsub!("&gt;",">")
+              add_text_content(segment,x,y,options)      
+              x += text_width(segment, font_size) 
+            end
+          end              
+       end
+
+       def adjust_font_style(modifier="")
+         require "set"
+         @font_style ||= Set.new             
+         case(modifier)
+         when "<i>"
+           @font_style << "i"
+         when "<b>"
+           @font_style << "b"
+         when "</i>"
+           @font_style.delete "i"
+         when "</b>"
+           @font_style.delete "b"
+         end                      
+         n = font_families[@font.match(/(\w+)-?/)[1]][@font_style.to_a.join] 
+         font(n) if n && @font != n
+       end        
+
+       def font_families
+         @font_families ||= Hash.new { |h,k| h[k] = {} }.update(
+           "Helvetica" => {
+             "b"   => 'Helvetica-Bold',
+             "i"   => 'Helvetica-Oblique',
+             "bi"  => 'Helvetica-BoldOblique',
+             "ib"  => 'Helvetica-BoldOblique',
+             ""    => 'Helvetica'
+           },
+           "Courier" => {
+             "b"   => 'Courier-Bold',
+             "i"   => 'Courier-Oblique',
+             "bi"  => 'Courier-BoldOblique',
+             "ib"  => 'Courier-BoldOblique',
+             ""    => 'Courier'
+           },
+           'Times' => {
+             "b"   => 'Times-Bold',
+             "i"   => 'Times-Italic',
+             "bi"  => 'Times-BoldItalic',
+             "ib"  => 'Times-BoldItalic',
+             ""    => 'Times-Roman'
+           })
+      end
       
       # The current font_size being used in the document.
       #

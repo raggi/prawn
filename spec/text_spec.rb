@@ -67,21 +67,27 @@ end
 describe "Inline style parsing" do
   it "should wrap the string in an array if styles are not detected" do
     create_pdf
-    @pdf.parse_inline_styles("Hello World").should == ["Hello World"]
+    @pdf.send(:parse_inline_styles, "Hello World").should == ["Hello World"]
   end                                                                
   
   it "should return an array of segments when a style is detected" do
     create_pdf
-    @pdf.parse_inline_styles("Hello <i>Fine</i> World").should ==  
+    @pdf.send(:parse_inline_styles, "Hello <i>Fine</i> World").should ==  
       ["Hello ", "<i>","Fine", "</i>", " World"]  
   end
   
   it "should create an array of segments when multiple styles are detected" do    
     create_pdf
-    @pdf.parse_inline_styles("Hello <i>Fine <b>World</b></i>").should ==
+    @pdf.send(:parse_inline_styles, "Hello <i>Fine <b>World</b></i>").should ==
       ["Hello ", "<i>", "Fine ", "<b>", "World", "</b>", "</i>"]
+  end 
+  
+  it "should not split out other tags than <i>, <b>, </i>, </b>" do
+    create_pdf
+    @pdf.send(:parse_inline_styles,"Hello <indigo>Charlie</indigo>").should ==
+      ["Hello <indigo>Charlie</indigo>"]                           
   end
-end
+end                                                                
 
 describe "when drawing text" do
    
