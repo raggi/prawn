@@ -57,23 +57,8 @@ module Prawn
         
         x,y = translate(options[:at])
         font_size(options[:size] || current_font_size) do
-          font_name = font_registry[fonts[@font]]          
-          
-          text = @font_metrics.convert_text(text,options)    
-
-          add_content %Q{
-            BT
-            /#{font_name} #{current_font_size} Tf
-            #{x} #{y} Td
-          }
-          
-          add_content Prawn::PdfObject(text, true) << 
-            " #{options[:kerning] ? 'TJ' : 'Tj'}\n"
-          
-          add_content %Q{
-            ET
-          }
-        end
+          add_text_content(text,x,y,options)
+        end  
       end
 
       def font_metrics #:nodoc:
@@ -135,7 +120,80 @@ module Prawn
       #
       def font_size!(size)
         @font_size = size unless size == nil
-      end     
+      end   
+      
+      def parse_inline_styles(text) #:nodoc:  
+        segments = text.split( %r{(</?[ib]>)} ).delete_if{|x| x.empty? }
+        segments    
+      end    
+      
+      def style_tag?(text)
+        text =~ %r{(</?[ib]>)}
+      end 
+      
+      def render_inline_text_segments(text,options={}) 
+        
+         if options[:at]
+           x, y = options[:at]
+         else
+           x = horizontal_cursor(options[:align])
+           y = self.y 
+         end
+                     
+         parse_inline_styles(text).each do |segment| 
+           if style_tag?(segment)
+             adjust_font_style(segment)
+           else                 
+             add_text_content(segment,x,y,options)      
+             x += text_width(segment, font_size) 
+           end
+         end              
+      end
+      
+      def adjust_font_style(modifier="")
+        require "set"
+        @font_style ||= Set.new             
+        case(modifier)
+        when "<i>"
+          @font_style << "i"
+        when "<b>"
+          @font_style << "b"
+        when "</i>"
+          @font_style.delete "i"
+        when "</b>"
+          @font_style.delete "b"
+        end                      
+        n = font_families[@font.match(/(\w+)-?/)[1]][@font_style.to_a.join] 
+        font(n) if n && @font != n
+      end        
+      
+      def font_families
+        @font_families ||= Hash.new { |h,k| h[k] = {} }.update(
+          "Helvetica" => {
+            "b"   => 'Helvetica-Bold',
+            "i"   => 'Helvetica-Oblique',
+            "bi"  => 'Helvetica-BoldOblique',
+            "ib"  => 'Helvetica-BoldOblique',
+            ""    => 'Helvetica'
+          },
+          "Courier" => {
+            "b"   => 'Courier-Bold',
+            "i"   => 'Courier-Oblique',
+            "bi"  => 'Courier-BoldOblique',
+            "ib"  => 'Courier-BoldOblique',
+            ""    => 'Courier'
+          },
+          'Times' => {
+            "b"   => 'Times-Bold',
+            "i"   => 'Times-Italic',
+            "bi"  => 'Times-BoldItalic',
+            "ib"  => 'Times-BoldItalic',
+            ""    => 'Times-Roman'
+          })
+     end
+      
+      #text.gsub!("&lt;","<")    
+      #text.gsub!("&gt;",">")
       
       alias_method :font_size=, :font_size!
 
@@ -153,54 +211,66 @@ module Prawn
 
       def text_width(text,size)
         @font_metrics.string_width(text,size)
+      end                                         
+      
+      def horizontal_cursor(align)
+        case(align) 
+        when :left
+          x = @bounding_box.absolute_left
+        when :center
+          x = @bounding_box.absolute_left + 
+            (@bounding_box.width - line_width) / 2.0
+        when :right
+          x = @bounding_box.absolute_right - line_width
+        end        
       end
 
-      # TODO: Get kerning working with wrapped text
       def wrapped_text(text,options) 
         options[:align] ||= :left
         font_size(options[:size] || current_font_size) do
-          font_name = font_registry[fonts[@font]]
 
           text = @font_metrics.naive_wrap(text, bounds.right, current_font_size, 
             :kerning => options[:kerning]) 
 
           lines = text.lines
 
-          lines.each do |e|    
-            
+          lines.each do |e|              
             move_text_position(@font_metrics.font_height(current_font_size) +
                            @font_metrics.descender / 1000.0 * current_font_size)  
                                
                            
-            line_width = text_width(e,font_size)
-            case(options[:align]) 
-            when :left
-              x = @bounding_box.absolute_left
-            when :center
-              x = @bounding_box.absolute_left + 
-                (@bounding_box.width - line_width) / 2.0
-            when :right
-              x = @bounding_box.absolute_right - line_width
-            end
+            #line_width = text_width(e,font_size) 
+            if style_tag?(e)
+              render_inline_text_segments(e,options)
+            else
+              x = horizontal_cursor(options[:align])
                                
-            add_content %Q{
-              BT
-              /#{font_name} #{current_font_size} Tf
-              #{x} #{y} Td
-            }    
-             
-           add_content Prawn::PdfObject(@font_metrics.convert_text(e,options), true) << 
-             " #{options[:kerning] ? 'TJ' : 'Tj'}\n"   
-
-            add_content %Q{
-              ET
-            }                
+              add_text_content(e,x,y,options)             
+            end
             
             ds = -@font_metrics.descender / 1000.0 * current_font_size 
-            move_text_position(options[:spacing] || ds )
+            move_text_position(options[:spacing] || ds )        
           end
         end
-      end
+      end  
+      
+      def add_text_content(text, x, y, options)          
+        text      = @font_metrics.convert_text(text,options)    
+        font_name = font_registry[fonts[@font]] 
+           
+        add_content %Q{
+          BT
+          /#{font_name} #{font_size} Tf
+          #{x} #{y} Td
+        }
+      
+        add_content Prawn::PdfObject(text, true) <<
+          " #{options[:kerning] ? 'TJ' : 'Tj'}\n"
+      
+        add_content %Q{
+          ET
+        }
+      end  
 
       def embed_ttf_font(file) #:nodoc:
 
