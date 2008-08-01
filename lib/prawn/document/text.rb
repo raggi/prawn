@@ -8,7 +8,7 @@
 require "zlib"
 
 module Prawn
-  class Document
+  class Document  
     module Text
       DEFAULT_FONT_SIZE = 12
       
@@ -126,14 +126,7 @@ module Prawn
 
       private  
       
-       def parse_inline_styles(text) #:nodoc:  
-         segments = text.split( %r{(</?[ib]>)} ).delete_if{|x| x.empty? }
-         segments    
-       end    
 
-       def style_tag?(text)
-         text =~ %r{(</?[ib]>)}
-       end 
 
        def render_inline_text_segments(text,options={}) 
           if options[:at]
@@ -143,8 +136,8 @@ module Prawn
             y = self.y 
           end
 
-          parse_inline_styles(text).each do |segment| 
-            if style_tag?(segment)
+          StyleParser.process(text).each do |segment| 
+            if StyleParser.style_tag?(segment)
               adjust_font_style(segment)
             else                      
               segment.gsub!("&lt;","<")    
@@ -238,7 +231,7 @@ module Prawn
                                
                            
             #line_width = text_width(e,font_size) 
-            if style_tag?(e)
+            if StyleParser.style_tag?(e)
               render_inline_text_segments(e,options)
             else
               x = horizontal_cursor(options[:align])
@@ -396,6 +389,21 @@ module Prawn
 
       def fonts #:nodoc:
         @fonts ||= {}
+      end 
+      
+      module StyleParser  
+        
+        module_function
+        
+        def process(text) #:nodoc:  
+          segments = text.split( %r{(</?[ib]>)} ).delete_if{|x| x.empty? }
+          segments    
+        end    
+
+        def style_tag?(text)
+          text =~ %r{(</?[ib]>)}
+        end 
+        
       end
 
     end

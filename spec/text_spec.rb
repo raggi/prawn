@@ -64,27 +64,28 @@ describe "Font Metrics" do
 
 end    
 
-describe "Inline style parsing" do
+describe "Inline style parsing" do     
+    
+  before :each do
+    @parser = Prawn::Document::Text::StyleParser
+  end
+  
   it "should wrap the string in an array if styles are not detected" do
-    create_pdf
-    @pdf.send(:parse_inline_styles, "Hello World").should == ["Hello World"]
+    @parser.process("Hello World").should == ["Hello World"]
   end                                                                
   
   it "should return an array of segments when a style is detected" do
-    create_pdf
-    @pdf.send(:parse_inline_styles, "Hello <i>Fine</i> World").should ==  
+    @parser.process("Hello <i>Fine</i> World").should ==  
       ["Hello ", "<i>","Fine", "</i>", " World"]  
   end
   
   it "should create an array of segments when multiple styles are detected" do    
-    create_pdf
-    @pdf.send(:parse_inline_styles, "Hello <i>Fine <b>World</b></i>").should ==
+    @parser.process("Hello <i>Fine <b>World</b></i>").should ==
       ["Hello ", "<i>", "Fine ", "<b>", "World", "</b>", "</i>"]
   end 
   
   it "should not split out other tags than <i>, <b>, </i>, </b>" do
-    create_pdf
-    @pdf.send(:parse_inline_styles,"Hello <indigo>Charlie</indigo>").should ==
+    @parser.process("Hello <indigo>Charlie</indigo>").should ==
       ["Hello <indigo>Charlie</indigo>"]                           
   end
 end                                                                
