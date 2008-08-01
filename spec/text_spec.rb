@@ -64,31 +64,35 @@ describe "Font Metrics" do
 
 end    
 
-describe "Inline style parsing" do     
-    
+describe "An inline style parser" do         
   before :each do
     @parser = Prawn::Document::Text::StyleParser
   end
-  
+
   it "should wrap the string in an array if styles are not detected" do
     @parser.process("Hello World").should == ["Hello World"]
   end                                                                
-  
-  it "should return an array of segments when a style is detected" do
+
+  it "should parse italic tags" do
     @parser.process("Hello <i>Fine</i> World").should ==  
       ["Hello ", "<i>","Fine", "</i>", " World"]  
-  end
+  end 
   
-  it "should create an array of segments when multiple styles are detected" do    
+  it "should parse bold tags" do
+    @parser.process("Some very <b>bold text</b>").should ==  
+      ["Some very ", "<b>","bold text", "</b>"]  
+  end
+
+  it "should parse mixed italic and bold tags" do    
     @parser.process("Hello <i>Fine <b>World</b></i>").should ==
       ["Hello ", "<i>", "Fine ", "<b>", "World", "</b>", "</i>"]
   end 
-  
+
   it "should not split out other tags than <i>, <b>, </i>, </b>" do
     @parser.process("Hello <indigo>Charlie</indigo>").should ==
       ["Hello <indigo>Charlie</indigo>"]                           
   end
-end                                                                
+end                                                               
 
 describe "when drawing text" do
    
@@ -197,8 +201,9 @@ describe "when drawing text" do
        str.force_encoding("ASCII-8BIT")
        lambda { @pdf.text str }.should raise_error(Prawn::Errors::IncompatibleStringEncoding)
      end
-     it "should not raise an exception when a shift-jis string is rendered" do
-       sjis_str = File.read("#{Prawn::BASEDIR}/data/shift_jis_text.txt")
+     it "should not raise an exception when a shift-jis string is rendered" do 
+       datafile = "#{Prawn::BASEDIR}/data/shift_jis_text.txt"  
+       sjis_str = File.open(datafile, "r:shift_jis") { |f| f.gets } 
        lambda { @pdf.text sjis_str }.should_not raise_error(Prawn::Errors::IncompatibleStringEncoding)
      end
    else
