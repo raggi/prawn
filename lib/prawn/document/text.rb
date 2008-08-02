@@ -401,7 +401,7 @@ module Prawn
         end    
 
         def style_tag?(text)
-          text =~ %r{(</?[ib]>)}
+          !!(text =~ %r{(</?[ib]>)})
         end 
         
       end

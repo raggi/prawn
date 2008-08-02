@@ -91,7 +91,14 @@ describe "An inline style parser" do
   it "should not split out other tags than <i>, <b>, </i>, </b>" do
     @parser.process("Hello <indigo>Charlie</indigo>").should ==
       ["Hello <indigo>Charlie</indigo>"]                           
+  end    
+  
+  it "be able to check whether a string needs to be parsed" do
+     @pdf = Prawn::Document.new
+     @parser.style_tag?("Hello World").should be_false
+     @parser.style_tag?("Hello <i>Fine</i> World").should be_true
   end
+  
 end                                                               
 
 describe "when drawing text" do
