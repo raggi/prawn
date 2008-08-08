@@ -21,7 +21,7 @@ end
            
 describe "When drawing a line" do
    
-  before(:each) { create_pdf }
+  before { create_pdf }
  
   it "should draw a line from (100,600) to (100,500)" do
     @pdf.line([100,600],[100,500])
@@ -60,7 +60,7 @@ end
 
 describe "When drawing a polygon" do
 
-  before(:each) { create_pdf }
+  before { create_pdf }
 
   it "should draw each line passed to polygon()" do
     @pdf.polygon([100,500],[100,400],[200,400])
@@ -84,7 +84,7 @@ end
 
 describe "When drawing a rectangle" do
 
-  before(:each) { create_pdf }
+  before { create_pdf }
 
   it "should use a point, width, and height for coords" do
     @pdf.rectangle [200,200], 50, 100
@@ -119,7 +119,7 @@ end
 
 describe "When drawing a curve" do  
     
-  before(:each) { create_pdf }
+  before { create_pdf }
   
   it "should draw a bezier curve from 50,50 to 100,100" do
     @pdf.move_to  [50,50]
@@ -137,7 +137,7 @@ describe "When drawing a curve" do
 end 
 
 describe "When drawing an ellipse" do
-  before(:each) do 
+  before do 
     create_pdf
     @pdf.ellipse_at [100,100], 25, 50
     @curve = observer(CurveObserver) 
@@ -150,7 +150,7 @@ describe "When drawing an ellipse" do
 end  
 
 describe "When drawing a circle" do
-  before(:each) do 
+  before do 
     create_pdf
     @pdf.circle_at [100,100], :radius => 25 
     @pdf.ellipse_at [100,100], 25, 25
@@ -185,7 +185,7 @@ end
 
 describe "When setting colors" do
 
-  before(:each) { create_pdf }
+  before { create_pdf }
 
   it "should set stroke colors" do
     @pdf.stroke_color "ffcccc"
@@ -227,18 +227,21 @@ describe "When setting colors" do
 end
 
 describe "When using painting shortcuts" do
-  before(:each) { create_pdf }
+  before { create_pdf }
  
+  # N.B. I'm doing a should.not.raise here because facon isn't adding itself
+  # to bacons expectation list yet, so bacon otherwise has empty specs :(
+  # small patch required.
   it "should convert stroke_some_method(args) into some_method(args); stroke" do
-    @pdf.expects(:line_to).with([100,100])
-    @pdf.expects(:stroke)
+    @pdf.should.receive(:line_to).with([100,100])
+    lambda { @pdf.should.receive(:stroke) }.should.not.raise
     
     @pdf.stroke_line_to [100,100]
-  end  
+  end
   
   it "should convert fill_some_method(args) into some_method(args); fill" do
-    @pdf.expects(:line_to).with([100,100]) 
-    @pdf.expects(:fill)
+    @pdf.should.receive(:line_to).with([100,100]) 
+    lambda { @pdf.should.receive(:fill) }.should.not.raise
     
     @pdf.fill_line_to [100,100]
   end

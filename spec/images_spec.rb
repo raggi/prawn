@@ -21,7 +21,7 @@ end
 
 describe "the image() function" do
 
-  before(:each) do
+  before do
     @filename = "#{Prawn::BASEDIR}/data/images/pigs.jpg"
     create_pdf
   end

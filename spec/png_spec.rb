@@ -8,7 +8,7 @@ require File.join(File.expand_path(File.dirname(__FILE__)), "spec_helper")
 
 describe "When reading an RGB PNG file" do
 
-  before(:each) do
+  before do
     @filename = "#{Prawn::BASEDIR}/data/images/ruport.png"
     @data_filename = "#{Prawn::BASEDIR}/data/images/ruport_data.dat"
     @img_data = File.open(@filename, "rb") { |f| f.read }

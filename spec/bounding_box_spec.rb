@@ -4,7 +4,7 @@ require File.join(File.expand_path(File.dirname(__FILE__)), "spec_helper")
 
 describe "A bounding box" do
 
-  before(:each) do
+  before do
     @x      = 100
     @y      = 125
     @width  = 50

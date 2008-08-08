@@ -1,24 +1,33 @@
 # encoding: utf-8
 
 require File.join(File.expand_path(File.dirname(__FILE__)), "spec_helper")  
-                               
-describe "When creating multi-page documents" do 
-  
-  class PageCounter
-    attr_accessor :pages
 
-    def initialize
-      @pages = 0
-    end
+class PageCounter
+  attr_accessor :pages
 
-    # Called when page parsing ends
-    def end_page
-      @pages += 1
-    end
+  def initialize
+    @pages = 0
   end
+
+  # Called when page parsing ends
+  def end_page
+    @pages += 1
+  end
+end
+
+module PageCounterHelper
+  def count_pages        
+    output = @pdf.render
+    obs = PageCounter.new
+    PDF::Reader.string(output,obs) 
+    return obs
+  end
+end
+                         
+describe "When creating multi-page documents" do 
+  extend PageCounterHelper
   
-  
-  before(:each) { create_pdf }
+  before { create_pdf }
   
   it "should initialize with a single page" do 
     page_counter = count_pages
@@ -33,14 +42,7 @@ describe "When creating multi-page documents" do
     
     page_counter.pages.should == 4
     @pdf.page_count.should == 4
-  end        
-  
-  def count_pages        
-    output = @pdf.render
-    obs = PageCounter.new
-    PDF::Reader.string(output,obs) 
-    return obs
-  end              
+  end
   
 end   
 
@@ -49,11 +51,12 @@ describe "When beginning each new page" do
   it "should execute the lambda specified by on_page_start" do
     on_start = mock("page_start_proc")
 
-    on_start.expects(:[]).times(3)
-   
-    pdf = Prawn::Document.new(:on_page_start => on_start)
-    pdf.start_new_page 
-    pdf.start_new_page
+    f = on_start.should.receive(:[]).times(3)
+    lambda {
+      pdf = Prawn::Document.new(:on_page_start => on_start)
+      pdf.start_new_page 
+      pdf.start_new_page
+    }.should.not.raise
   end
 
 end
@@ -65,36 +68,34 @@ describe "When ending each page" do
 
     on_end = mock("page_end_proc")
 
-    on_end.expects(:[]).times(3)
+    on_end.should.receive(:[]).times(3)
 
     pdf = Prawn::Document.new(:on_page_stop => on_end)
     pdf.start_new_page
     pdf.start_new_page
-    pdf.render
+    lambda { pdf.render }.should.not.raise
   end
 
   it "should not compress the page content stream if compression is disabled" do
 
     pdf = Prawn::Document.new(:compress => false)
     content_stub = pdf.ref({})
-    content_stub.stubs(:compress_stream).returns(true)
-    content_stub.expects(:compress_stream).never
+    content_stub.should.receive(:compress_stream).never.and_return(true)
 
     pdf.instance_variable_set("@page_content", content_stub)
     pdf.text "Hi There" * 20
-    pdf.render
+    lambda { pdf.render }.should.not.raise
   end
 
   it "should compress the page content stream if compression is enabled" do
 
     pdf = Prawn::Document.new(:compress => true)
     content_stub = pdf.ref({})
-    content_stub.stubs(:compress_stream).returns(true)
-    content_stub.expects(:compress_stream).once
+    content_stub.should.receive(:compress_stream).and_return(true)
 
     pdf.instance_variable_set("@page_content", content_stub)
     pdf.text "Hi There" * 20
-    pdf.render
+    lambda { pdf.render }.should.not.raise
   end
 
 end                                 

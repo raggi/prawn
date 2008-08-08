@@ -3,8 +3,12 @@
 puts "Prawn specs: Running on Ruby Version: #{RUBY_VERSION}"
 
 require "rubygems"
-require "test/spec"                                                
-require "mocha"
+#require "test/spec"                                                
+require 'bacon'
+require 'facon'
+require 'facon/baconize'
+Bacon.summary_on_exit
+#require "mocha"
 $LOAD_PATH << File.join(File.dirname(__FILE__), '..', 'lib') 
 require "prawn"
 gem 'pdf-reader', ">=0.7.3"

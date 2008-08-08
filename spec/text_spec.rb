@@ -65,7 +65,7 @@ end
 
 describe "when drawing text" do
    
-   before(:each) { create_pdf } 
+   before { create_pdf } 
 
    it "should advance down the document based on font_height" do
      position = @pdf.y

@@ -4,7 +4,7 @@ require File.join(File.expand_path(File.dirname(__FILE__)), "spec_helper")
 
 describe "adobe font metrics" do
   
-  setup do
+  before do
     @times = Prawn::Font::Metrics["Times-Roman"]
     @iconv = Iconv.new('ISO-8859-1', 'utf-8')
   end
@@ -30,7 +30,7 @@ end
 
 describe "ttf font metrics" do
   
-  setup do
+  before do
     @activa = Prawn::Font::Metrics["#{Prawn::BASEDIR}/data/fonts/Activa.ttf"]
   end
   
