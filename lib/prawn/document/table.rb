@@ -7,8 +7,8 @@
 # This is free software. Please see the LICENSE and COPYING files for details.
 
 module Prawn
-  class Document
-
+  class Document    
+    
     # Builds and renders a Document::Table object from raw data.
     # For details on the options that can be passed, see
     # Document::Table.new
@@ -37,7 +37,7 @@ module Prawn
     #
     #   end
     #
-    def table(data,options={})
+    def table(data,options={})           
       Prawn::Document::Table.new(data,self,options).draw
     end
 
@@ -63,7 +63,9 @@ module Prawn
     # 
     class Table
 
-      attr_reader :col_widths # :nodoc:
+      attr_reader :col_widths # :nodoc: 
+      
+      NUMBER_PATTERN = /^-?(?:0|[1-9]\d*)(?:\.\d+(?:[eE][+-]?\d+)?)?$/ #:nodoc: 
 
       # Creates a new Document::Table object. This is generally called 
       # indirectly through Document#table but can also be used explictly.
@@ -94,16 +96,17 @@ module Prawn
       # See Document#table for typical usage, as directly using this class is
       # not recommended unless you know why you want to do it.
       #
-      def initialize(data, document,options={})
+      def initialize(data, document,options={})    
         @data                = data
-        @document            = document
+        @document            = document                    
         @font_size           = options[:font_size] || 12
         @border_style        = options[:border_style]
         @border              = options[:border]    || 1
         @position            = options[:position]  || :left
         @headers             = options[:headers]
         @row_colors          = options[:row_colors]   
-        @align               = options[:align]
+        @align               = options[:align]    
+        @align_headers       = options[:align_headers]
 
         @horizontal_padding  = options[:horizontal_padding] || 5
         @vertical_padding    = options[:vertical_padding]   || 5
@@ -118,7 +121,9 @@ module Prawn
         @original_row_colors = @row_colors.dup if @row_colors  
         
         calculate_column_widths(options[:widths])
-      end
+      end      
+      
+      attr_reader :col_widths
       
       # Width of the table in PDF points
       #
@@ -128,12 +133,14 @@ module Prawn
       
       # Draws the table onto the PDF document
       #
-      def draw
+      def draw  
+        @parent_bounds = @document.bounds  
         case(@position) 
         when :center
           x = (@document.bounds.width - width) / 2.0
-          y = @document.y - @document.bounds.absolute_bottom
-          @document.bounding_box [x, y], :width => width do
+          dy = @document.bounds.absolute_top - @document.y
+          @document.bounding_box [x, @parent_bounds.top], :width => width do 
+            @document.move_down(dy)
             generate_table
           end
         when Numeric     
@@ -154,9 +161,9 @@ module Prawn
         renderable_data.each do |row|
           row.each_with_index do |cell,i|
             length = cell.to_s.lines.map { |e| 
-              @document.font_metrics.string_width(e,@font_size) }.max.to_f +
+              @document.font.metrics.string_width(e,@font_size) }.max.to_f +
                 2*@horizontal_padding
-            @col_widths[i] = length if length > @col_widths[i]
+            @col_widths[i] = length.ceil if length > @col_widths[i]
           end
         end  
         
@@ -172,14 +179,24 @@ module Prawn
         end
       end
 
-      def generate_table
+      def generate_table    
         page_contents = []
-        y_pos = @document.y
+        y_pos = @document.y 
 
-        @document.font_size(@font_size) do
+        @document.font.size(@font_size) do
           renderable_data.each_with_index do |row,index|
             c = Prawn::Graphics::CellBlock.new(@document)
-            row.each_with_index do |e,i| 
+            row.each_with_index do |e,i|     
+              case(@align)
+              when Hash
+                align            = @align[i]
+              else
+                align            = @align
+              end   
+              
+              
+              align ||= e.to_s =~ NUMBER_PATTERN ? :right : :left 
+              
               case(e)
               when Prawn::Graphics::Cell
                 e.document = @document
@@ -188,7 +205,7 @@ module Prawn
                 e.vertical_padding   = @vertical_padding    
                 e.border             = @border
                 e.border_style       = :sides
-                e.align              = @align
+                e.align              = align 
                 c << e
               else
                 c << Prawn::Graphics::Cell.new(
@@ -199,11 +216,11 @@ module Prawn
                   :vertical_padding => @vertical_padding,
                   :border   => @border,
                   :border_style => :sides,
-                  :align    => @align ) 
+                  :align    => align ) 
               end   
             end
 
-            if c.height > y_pos - @document.margin_box.absolute_bottom
+            if c.height > y_pos - @parent_bounds.absolute_bottom
               draw_page(page_contents)
               @document.start_new_page
               if @headers
@@ -224,7 +241,6 @@ module Prawn
             end
 
           end
-          @document.y -= @vertical_padding
         end
       end
 
@@ -233,8 +249,13 @@ module Prawn
 
         if @border_style == :grid || contents.length == 1
           contents.each { |e| e.border_style = :all }
-        else
-          contents.first.border_style = @headers ? :all : :no_bottom
+        else                            
+          if @headers
+            contents.first.border_style = :all 
+            contents.first.align        = @align_headers || :left
+          else
+            contents.first.border_style  = :no_bottom    
+          end
           contents.last.border_style  = :no_top
         end
 

@@ -10,7 +10,7 @@
 # This is free software. Please see the LICENSE and COPYING files for details.
 
 module Prawn
-  module Font #:nodoc:
+  class Font #:nodoc:
     class Metrics #:nodoc:
 
       include Prawn::Font::Wrapping
@@ -116,8 +116,8 @@ module Prawn
         def kern(string) 
           kerned = string.unpack("C*").inject([]) do |a,r|
             if a.last.is_a? Array
-              if kern = latin_kern_pairs_table[[a.last.last, r]]
-                a << kern << [r]
+              if k = latin_kern_pairs_table[[a.last.last, r]]
+                a << k << [r]
               else
                 a.last << r
               end
@@ -134,7 +134,7 @@ module Prawn
           }                        
         end
         
-        def latin_kern_pairs_table
+        def latin_kern_pairs_table   
           @kern_pairs_table ||= @kern_pairs.inject({}) do |h,p|
             h[p[0].map { |n| ISOLatin1Encoding.index(n) }] = p[1]
             h
@@ -247,9 +247,11 @@ module Prawn
         
         def initialize(font)
           @ttf = ::Font::TTF::File.open(font,"rb")
-          @attributes     = {}
-          @glyph_widths   = {}
-          @bounding_boxes = {}
+          @attributes       = {}
+          @glyph_widths     = {}
+          @bounding_boxes   = {} 
+          @char_widths      = {}   
+          @has_kerning_data = !kern_pairs_table.empty?    
         end
 
         def cmap
@@ -275,7 +277,9 @@ module Prawn
         
         # TODO: NASTY. 
         def kern(string,options={})   
-          string.unpack("U*").inject([]) do |a,r|
+          a = []
+          
+          string.unpack("U*").each do |r|
             if a.last.is_a? Array
               if kern = kern_pairs_table[[cmap[a.last.last], cmap[r]]] 
                 kern *= scale_factor
@@ -287,7 +291,9 @@ module Prawn
               a << [r]
             end
             a
-          end.map { |r| 
+          end
+          
+          a.map { |r| 
             if options[:skip_conversion]
               r.is_a?(Array) ? r.pack("U*") : r
             else
@@ -377,19 +383,19 @@ module Prawn
             s.is_a? ::Font::TTF::Table::Kern::KerningSubtable0 }
           
           if table
-            @kern_pairs_table ||= table.kerning_pairs.inject({}) do |h,p|
+            @kern_pairs_table = table.kerning_pairs.inject({}) do |h,p|
               h[[p.left, p.right]] = p.value
               h
             end
           else
             @kern_pairs_table = {}
-          end
+          end               
+        rescue ::Font::TTF::TableMissing
+          @kern_pairs_table = {}
         end
 
         def has_kerning_data?
-          !kern_pairs_table.empty? 
-        rescue ::Font::TTF::TableMissing
-          false
+          @has_kerning_data 
         end
 
         def type0?
@@ -398,9 +404,9 @@ module Prawn
 
         def convert_text(text,options)
           text = text.chomp
-          if options[:kerning]
-            kern(text)
-          else
+          if options[:kerning] 
+            kern(text)         
+          else     
            unicode_codepoints = text.unpack("U*")
             glyph_codes = unicode_codepoints.map { |u| 
               enc_table.get_glyph_id_for_unicode(u)
@@ -413,15 +419,16 @@ module Prawn
 
         def hmtx
           @hmtx ||= @ttf.get_table(:hmtx).metrics
-        end
+        end         
+        
 
-        def character_width_by_code(code)
+        def character_width_by_code(code)    
           return 0 unless cmap[code]
-          Integer(hmtx[cmap[code]][0] * scale_factor)           
+          @char_widths[code] ||= Integer(hmtx[cmap[code]][0] * scale_factor)           
         end                   
 
         def scale_factor
-          @scale ||= 1 / Float(@ttf.get_table(:head).units_per_em / 1000.0)
+          @scale ||= 1000 * Float(@ttf.get_table(:head).units_per_em)**-1
         end
 
       end

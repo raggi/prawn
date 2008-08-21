@@ -4,7 +4,7 @@ require 'rake/testtask'
 require "rake/rdoctask"
 require "rake/gempackagetask"  
 
-PRAWN_VERSION = "0.1.0" 
+PRAWN_VERSION = "0.1.99" 
 
 task :default => [:test]
        
@@ -35,9 +35,9 @@ end
 desc "run all examples, and then diff them against reference PDFs"
 task :examples do 
   mkdir_p "output"
-  examples = Dir["examples/*.rb"].reject { |e| e =~ /bench/ }   
+  examples = Dir["examples/*.rb"]
   t = Time.now
-  puts "Running Examples, skipping benchmark"
+  puts "Running Examples"
   examples.each { |file| `ruby -Ilib #{file}` }  
   puts "Ran in #{Time.now - t} s"        
   `mv *.pdf output`                     

@@ -21,9 +21,8 @@ module Prawn
     include PageGeometry                             
     
     attr_accessor :y, :margin_box
-    attr_reader   :margins, :page_size, :page_layout
-
-             
+    attr_reader   :margins, :page_size, :page_layout, :text_options
+      
     # Creates and renders a PDF document. 
     #
     # The block argument is necessary only when you need to make 
@@ -43,8 +42,7 @@ module Prawn
     #  end                                                
     #
     def self.generate(filename,options={},&block)
-      pdf = Prawn::Document.new(options)          
-      block.arity < 1 ? pdf.instance_eval(&block) : yield(pdf)
+      pdf = Prawn::Document.new(options,&block)          
       pdf.render_file(filename)
     end
           
@@ -72,16 +70,16 @@ module Prawn
     #   pdf = Prawn::Document.new(:on_page_start => 
     #     lambda { |doc| doc.line [0,100], [300,100] } )
     #
-    def initialize(options={})
+    def initialize(options={},&block)
        @objects = []
        @info    = ref(:Creator => "Prawn", :Producer => "Prawn")
        @pages   = ref(:Type => :Pages, :Count => 0, :Kids => [])  
-       @root    = ref(:Type => :Catalog, :Pages => @pages)  
-       @page_start_proc = options[:on_page_start]
-       @page_stop_proc  = options[:on_page_stop]              
-       @page_size   = options[:page_size]   || "LETTER"    
-       @page_layout = options[:page_layout] || :portrait
-       @compress = options[:compress] || false
+       @root    = ref(:Type => :Catalog, :Pages => @pages)        
+       @page_size       = options[:page_size]   || "LETTER"    
+       @page_layout     = options[:page_layout] || :portrait
+       @compress        = options[:compress] || false                
+       @skip_encoding   = options[:skip_encoding]
+       @text_options    = options[:text_options] || {}
              
        @margins = { :left   => options[:left_margin]   || 36,
                     :right  => options[:right_margin]  || 36,  
@@ -92,7 +90,11 @@ module Prawn
        
        @bounding_box = @margin_box
        
-       start_new_page unless options[:skip_page_creation]
+       start_new_page unless options[:skip_page_creation]    
+       
+       if block
+         block.arity < 1 ? instance_eval(&block) : block[self]    
+       end 
      end     
             
      # Creates and advances to a new page in the document.
@@ -123,15 +125,14 @@ module Prawn
                            :Parent    => @pages, 
                            :MediaBox  => page_dimensions, 
                            :Contents  => @page_content)
-       set_current_font    
+       font.add_to_current_page if @font_name  
        update_colors
        @pages.data[:Kids] << @current_page
        @pages.data[:Count] += 1 
      
        add_content "q"   
        
-       @y = @margin_box.absolute_top        
-       @page_start_proc[self] if @page_start_proc
+       @y = @bounding_box.absolute_top        
     end             
       
     # Returns the number of pages in the document
@@ -176,6 +177,10 @@ module Prawn
     #
     def bounds
       @bounding_box
+    end  
+    
+    def bounds=(bounding_box)
+      @bounding_box = bounding_box
     end
 
     # Moves up the document by n points
@@ -244,26 +249,8 @@ module Prawn
 
     def compression_enabled?
       @compress
-    end
-
-   
-    private 
+    end 
     
-    def generate_margin_box     
-      old_margin_box = @margin_box
-      @margin_box = BoundingBox.new(
-        self,
-        [ @margins[:left], page_dimensions[-1] - @margins[:top] ] ,
-        :width => page_dimensions[-2] - (@margins[:left] + @margins[:right]),
-        :height => page_dimensions[-1] - (@margins[:top] + @margins[:bottom])
-      )                                 
-            
-      # update bounding box if not flowing from the previous page
-      # TODO: This may have a bug where the old margin is restored
-      # when the bounding box exits.
-      @bounding_box = @margin_box if old_margin_box == @bounding_box              
-    end
-  
     def ref(data)
       @objects.push(Prawn::Reference.new(@objects.size + 1, data)).last
     end                                               
@@ -289,9 +276,27 @@ module Prawn
     def page_xobjects
       page_resources[:XObject] ||= {}
     end
+   
+    private 
+    
+    def generate_margin_box     
+      old_margin_box = @margin_box
+      @margin_box = BoundingBox.new(
+        self,
+        [ @margins[:left], page_dimensions[-1] - @margins[:top] ] ,
+        :width => page_dimensions[-2] - (@margins[:left] + @margins[:right]),
+        :height => page_dimensions[-1] - (@margins[:top] + @margins[:bottom])
+      )                                 
+            
+      # update bounding box if not flowing from the previous page
+      # TODO: This may have a bug where the old margin is restored
+      # when the bounding box exits.
+      @bounding_box = @margin_box if old_margin_box == @bounding_box              
+    end
     
     def finish_page_content     
-      @page_stop_proc[self] if @page_stop_proc
+      @header.draw if @header      
+      @footer.draw if @footer
       add_content "Q"
       @page_content.compress_stream if compression_enabled?
       @page_content.data[:Length] = @page_content.stream.size

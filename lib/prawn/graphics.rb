@@ -7,7 +7,8 @@
 # This is free software. Please see the LICENSE and COPYING files for details.
 
 require "enumerator"
-require "prawn/graphics/cell"
+require "prawn/graphics/cell"   
+require "prawn/graphics/color"
 
 module Prawn
 
@@ -17,9 +18,10 @@ module Prawn
   # This file lifts and modifies several of PDF::Writer's graphics functions
   # ruby-pdf.rubyforge.org
   #
-  module Graphics 
-      
-      
+  module Graphics  
+    
+    include Color
+           
     #######################################################################
     # Low level drawing operations must translate to absolute coords!     #
     #######################################################################
@@ -104,7 +106,7 @@ module Prawn
     # current <tt>y</tt> position.
     #
     def horizontal_line(x1,x2)
-      line(x1,y,x2,y)
+      line(x1,y-bounds.absolute_bottom,x2,y-bounds.absolute_bottom)
     end
 
     # Draws a horizontal line from the left border to the right border of the
@@ -191,95 +193,34 @@ module Prawn
         line_to(*p2)
       end
     end
-                                      
-    # Sets the fill color.  6 digit HTML color codes are used.
-    # 
-    #   pdf.fill_color "f0ffc1"
-    #
-    def fill_color(color=nil)
-      return @fill_color unless color
-      @fill_color = color
-      set_fill_color     
-    end 
     
-    alias_method :fill_color=, :fill_color                                                                     
-    
-    # Sets the line stroking color.  6 digit HTML color codes are used.
-    #
-    #   pdf.stroke_color "cc2fde"
-    #
-    def stroke_color(color=nil) 
-      return @stroke_color unless color
-      @stroke_color = color
-      set_stroke_color
-    end   
-    
-    alias_method :stroke_color=, :stroke_color
-    
-    # Strokes and closes the current path.
+    # Strokes and closes the current path. See Graphic::Color for color details
     #
     def stroke
       yield if block_given?
       add_content "S"
     end
 
-    # Fills and closes the current path
+    # Fills and closes the current path. See Graphic::Color for color details
     #
     def fill               
       yield if block_given?
       add_content "f"
     end
-    
-    # Fills, strokes, and closes the current path.
+
+    # Fills, strokes, and closes the current path. See Graphic::Color for color details
     #
     def fill_and_stroke  
       yield if block_given?
       add_content "b" 
-    end     
+    end                                                       
     
-    # Provides the following shortcuts:
-    #
-    #    stroke_some_method(*args) #=> some_method(*args); stroke
-    #    fill_some_method(*args) #=> some_method(*args); fill
-    #
-    def method_missing(id,*args,&block)
-      case(id.to_s) 
-      when /^fill_and_stroke_(.*)/
-        send($1,*args,&block); fill_and_stroke
-      when /^stroke_(.*)/
-        send($1,*args,&block); stroke 
-      when /^fill_(.*)/
-        send($1,*args,&block); fill
-      else
-        super
-      end
-    end                    
-    
-    private    
+    private       
     
     def translate(*point)
       x,y = point.flatten
       [@bounding_box.absolute_left + x, @bounding_box.absolute_bottom + y]
-    end     
-                                                                        
-    def set_fill_color
-      r,g,b = [@fill_color[0..1], @fill_color[2..3], @fill_color[4..5]].
-              map { |e| e.to_i(16) }       
-      add_content "%.3f %.3f %.3f rg" %  [r / 255.0, g / 255.0, b / 255.0]   
-    end
-    
-    def set_stroke_color
-      r,g,b = [@stroke_color[0..1], @stroke_color[2..3], @stroke_color[4..5]].
-              map { |e| e.to_i(16) }     
-      add_content "%.3f %.3f %.3f RG" %  [r / 255.0, g / 255.0, b / 255.0]       
-    end                                       
-    
-    def update_colors 
-      @fill_color   ||= "000000"
-      @stroke_color ||= "000000"                                       
-      set_fill_color
-      set_stroke_color
-    end
+    end                                                                           
 
   end
 end

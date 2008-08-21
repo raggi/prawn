@@ -48,32 +48,39 @@ end
 
 describe "When beginning each new page" do
 
-  it "should execute the lambda specified by on_page_start" do
-    on_start = mock("page_start_proc")
-
-    f = on_start.should.receive(:[]).times(3)
-    lambda {
-      pdf = Prawn::Document.new(:on_page_start => on_start)
-      pdf.start_new_page 
-      pdf.start_new_page
-    }.should.not.raise
+  it "should execute codeblock given to Document#header" do
+    call_count = 0    
+   
+    pdf = Prawn::Document.new      
+    pdf.header(pdf.margin_box.top_left) do 
+      call_count += 1   
+    end
+    
+    pdf.start_new_page 
+    pdf.start_new_page 
+    pdf.render
+    
+    call_count.should == 3
   end
 
 end
 
-
 describe "When ending each page" do
 
-  it "should execute the lambda specified by on_page_end" do
-
-    on_end = mock("page_end_proc")
-
-    on_end.should.receive(:[]).times(3)
-
-    pdf = Prawn::Document.new(:on_page_stop => on_end)
-    pdf.start_new_page
-    pdf.start_new_page
-    lambda { pdf.render }.should.not.raise
+  it "should execute codeblock given to Document#footer" do
+   
+    call_count = 0    
+   
+    pdf = Prawn::Document.new      
+    pdf.footer([pdf.margin_box.left, pdf.margin_box.bottom + 50]) do 
+      call_count += 1   
+    end
+    
+    pdf.start_new_page 
+    pdf.start_new_page 
+    pdf.render
+    
+    call_count.should == 3
   end
 
   it "should not compress the page content stream if compression is disabled" do
