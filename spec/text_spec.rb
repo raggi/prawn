@@ -64,7 +64,7 @@ describe "Font Metrics" do
 end    
 
 describe "font style support" do
-  before(:each) { create_pdf }
+  before { create_pdf }
   
   it "should allow specifying font style by style name and font family" do    
     @pdf.font "Courier", :style => :bold

@@ -11,7 +11,7 @@ require File.join(File.expand_path(File.dirname(__FILE__)), "spec_helper")
 
 describe "When reading a greyscale PNG file (color type 0)" do
 
-  before(:each) do
+  before do
     @filename = "#{Prawn::BASEDIR}/data/images/web-links.png"
     @data_filename = "#{Prawn::BASEDIR}/data/images/web-links.dat"
     @img_data = File.read_binary(@filename) 
@@ -38,7 +38,7 @@ end
 
 describe "When reading a greyscale PNG file with transparency (color type 0)" do
 
-  before(:each) do
+  before do
     @filename = "#{Prawn::BASEDIR}/data/images/ruport_type0.png"
     @img_data = File.read_binary(@filename)
   end
@@ -82,7 +82,7 @@ end
 
 describe "When reading an RGB PNG file with transparency (color type 2)" do
 
-  before(:each) do
+  before do
     @filename = "#{Prawn::BASEDIR}/data/images/arrow2.png"
     @img_data = File.read_binary(@filename)
   end
@@ -102,7 +102,7 @@ end
 
 describe "When reading an indexed color PNG file (color type 3)" do
 
-  before(:each) do
+  before do
     @filename = "#{Prawn::BASEDIR}/data/images/rails.png"
     @data_filename = "#{Prawn::BASEDIR}/data/images/rails.dat"
     @img_data = File.read_binary(@filename) 
@@ -129,7 +129,7 @@ end
 
 describe "When reading a greyscale+alpha PNG file (color type 4)" do
 
-  before(:each) do
+  before do
     @filename = "#{Prawn::BASEDIR}/data/images/page_white_text.png"
     @data_filename = "#{Prawn::BASEDIR}/data/images/page_white_text.dat"
     @alpha_data_filename = "#{Prawn::BASEDIR}/data/images/page_white_text.alpha"
@@ -163,7 +163,7 @@ end
 
 describe "When reading an RGB+alpha PNG file (color type 6)" do
 
-  before(:each) do
+  before do
     @filename = "#{Prawn::BASEDIR}/data/images/dice.png"
     @data_filename = "#{Prawn::BASEDIR}/data/images/dice.dat"
     @alpha_data_filename = "#{Prawn::BASEDIR}/data/images/dice.alpha"

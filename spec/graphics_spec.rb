@@ -58,7 +58,7 @@ describe "When drawing a line" do
   
   describe "(Horizontally)" do  
    
-    before :each do
+    before do
       @pdf = Prawn::Document.new
       @pdf.horizontal_line(100,150)
       @line = observer(LineDrawingObserver) 

@@ -7,6 +7,7 @@ require "rubygems"
 require 'bacon'
 require 'facon'
 require 'facon/baconize'
+Bacon.extend Bacon::TestUnitOutput
 Bacon.summary_on_exit
 #require "mocha"
 $LOAD_PATH << File.join(File.dirname(__FILE__), '..', 'lib') 
